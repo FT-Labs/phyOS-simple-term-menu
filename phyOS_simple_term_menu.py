@@ -309,8 +309,8 @@ class TerminalMenu:
                     self._active_displayed_index = 0
                 self._viewport.keep_visible(self._active_displayed_index)
 
-                if self._displayed_index_to_menu_index[self._active_displayed_index] in self._skip_indices:
-                    self.increment_active_index()
+            if self._active_displayed_index in self._skip_indices:
+                self.increment_active_index()
 
         def decrement_active_index(self) -> None:
             if self._active_displayed_index is not None:
@@ -320,8 +320,8 @@ class TerminalMenu:
                     self._active_displayed_index = len(self._displayed_index_to_menu_index) - 1
                 self._viewport.keep_visible(self._active_displayed_index)
 
-                if self._displayed_index_to_menu_index[self._active_displayed_index] in self._skip_indices:
-                    self.decrement_active_index()
+            if self._active_displayed_index in self._skip_indices:
+                self.decrement_active_index()
 
         def is_visible(self, menu_index: int) -> bool:
             return menu_index in self._menu_index_to_displayed_index and (
@@ -348,20 +348,17 @@ class TerminalMenu:
 
         @active_menu_index.setter
         def active_menu_index(self, value: int) -> None:
-            self.active_displayed_index = self._menu_index_to_displayed_index[value]
+            self._selected_index = value
+            self._active_displayed_index = [
+                displayed_index
+                for displayed_index, menu_index in enumerate(self._displayed_index_to_menu_index)
+                if menu_index == value
+            ][0]
+            self._viewport.keep_visible(self._active_displayed_index)
 
         @property
         def active_displayed_index(self) -> Optional[int]:
             return self._active_displayed_index
-
-        @active_displayed_index.setter
-        def active_displayed_index(self, value: int) -> None:
-            self._active_displayed_index = value
-            self._viewport.keep_visible(self._active_displayed_index)
-
-        @property
-        def max_displayed_index(self) -> int:
-            return len(self._displayed_index_to_menu_index) - 1
 
         @property
         def displayed_selected_indices(self) -> List[int]:
@@ -510,7 +507,6 @@ class TerminalMenu:
         "cursor_visible": "cnorm",
         "delete_line": "dl1",
         "down": "kcud1",
-        "end": "kend",
         "enter_application_mode": "smkx",
         "exit_application_mode": "rmkx",
         "fg_black": "setaf 0",
@@ -521,7 +517,6 @@ class TerminalMenu:
         "fg_purple": "setaf 5",
         "fg_red": "setaf 1",
         "fg_yellow": "setaf 3",
-        "home": "khome",
         "italics": "sitm",
         "reset_attributes": "sgr0",
         "standout": "smso",
@@ -530,8 +525,6 @@ class TerminalMenu:
     }
     _name_to_control_character = {
         "backspace": "",  # Is assigned later in `self._init_backspace_control_character`
-        "ctrl-a": "\001",
-        "ctrl-e": "\005",
         "ctrl-j": "\012",
         "ctrl-k": "\013",
         "enter": "\015",
@@ -589,7 +582,7 @@ class TerminalMenu:
         def extract_shortcuts_menu_entries_and_preview_arguments(
             entries: Iterable[str],
         ) -> Tuple[List[str], List[Optional[str]], List[Optional[str]], List[int]]:
-            separator_pattern = re.compile(r"([^\\])\|")
+            separator_pattern = re.compile(r"([^\\])\\\|")
             escaped_separator_pattern = re.compile(r"\\\|")
             menu_entry_pattern = re.compile(r"^(?:\[(\S)\]\s*)?([^\x1F]+)(?:\x1F([^\x1F]*))?")
             shortcut_keys = []  # type: List[Optional[str]]
@@ -598,9 +591,9 @@ class TerminalMenu:
             skip_indices = []  # type: List[int]
 
             for idx, entry in enumerate(entries):
-                if entry is None or (entry == "" and skip_empty_entries):
+                if entry is None or ((entry == "" or "═" in entry or "─" in entry) and skip_empty_entries):
                     shortcut_keys.append(None)
-                    menu_entries.append("")
+                    menu_entries.append(entry)
                     preview_arguments.append(None)
                     skip_indices.append(idx)
                 else:
@@ -1464,8 +1457,6 @@ class TerminalMenu:
             menu_action_to_keys = {
                 "menu_up": set(("up", "ctrl-k", "k")),
                 "menu_down": set(("down", "ctrl-j", "j")),
-                "menu_start": set(("home", "ctrl-a")),
-                "menu_end": set(("end", "ctrl-e")),
                 "accept": set(self._accept_keys),
                 "multi_select": set(self._multi_select_keys),
                 "quit": set(self._quit_keys),
@@ -1476,6 +1467,7 @@ class TerminalMenu:
                 self._paint_menu()
                 current_menu_action_to_keys = copy.deepcopy(menu_action_to_keys)
                 next_key = self._read_next_key(ignore_case=False)
+
                 if self._search or self._search_key is None:
                     remove_letter_keys(current_menu_action_to_keys)
                 else:
@@ -1494,10 +1486,6 @@ class TerminalMenu:
                     self._view.decrement_active_index()
                 elif next_key in current_menu_action_to_keys["menu_down"]:
                     self._view.increment_active_index()
-                elif next_key in current_menu_action_to_keys["menu_start"]:
-                    self._view.active_displayed_index = 0
-                elif next_key in current_menu_action_to_keys["menu_end"]:
-                    self._view.active_displayed_index = self._view.max_displayed_index
                 elif self._multi_select and next_key in current_menu_action_to_keys["multi_select"]:
                     if self._view.active_menu_index is not None:
                         self._selection.toggle(self._view.active_menu_index)

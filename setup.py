@@ -31,7 +31,7 @@ class PyinstallerCommand(Command):
                     """
 #!/usr/bin/env python3
 
-from simple_term_menu import main
+from phyOS_simple_term_menu import main
 
 
 if __name__ == "__main__":
@@ -50,7 +50,7 @@ if __name__ == "__main__":
             )
 
 
-def get_version_from_pyfile(version_file: str = "simple_term_menu.py") -> str:
+def get_version_from_pyfile(version_file: str = "phyOS_simple_term_menu.py") -> str:
     file_globals = runpy.run_path(version_file)
     return cast(str, file_globals["__version__"])
 
@@ -67,11 +67,11 @@ version = get_version_from_pyfile()
 long_description = get_long_description_from_readme()
 
 setup(
-    name="simple-term-menu",
+    name="phyOS-simple-term-menu",
     version=version,
-    py_modules=["simple_term_menu"],
+    py_modules=["phyOS_simple_term_menu"],
     python_requires="~=3.5",
-    entry_points={"console_scripts": ["simple-term-menu = simple_term_menu:main"]},
+    entry_points={"console_scripts": ["phyOS-simple-term-menu = phyOS_simple_term_menu:main"]},
     cmdclass={"bdist_pyinstaller": PyinstallerCommand},
     author="Ingo Meyer",
     author_email="i.meyer@fz-juelich.de",
@@ -79,7 +79,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="MIT",
-    url="https://github.com/IngoMeyer441/simple-term-menu",
+    url="https://github.com/FT-Labs/phyOS-simple-term-menu",
     keywords=["terminal", "menu", "choice"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
